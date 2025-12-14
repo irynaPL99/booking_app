@@ -19,13 +19,15 @@ class Listing(AbstractBaseModel):
         related_name="listings",
         verbose_name=_("Owner"),
     )
-    title = models.CharField(
-        _("Title"),
-        max_length=200,
-    )
-    description = models.TextField(
-        _("Description"),
+    title = models.CharField(_("Title"), max_length=200)
+    description = models.TextField(_("Description"), blank=True)
+
+    region = models.CharField(
+        _("Region"),
+        max_length=100,
         blank=True,
+        null=True,
+        help_text=_("Federal state or region in Germany (e.g. Bavaria, NRW)."),
     )
 
     city = models.CharField(_("City"), max_length=100)
@@ -36,9 +38,7 @@ class Listing(AbstractBaseModel):
         _("House suffix"),
         max_length=20,
         blank=True,
-        help_text=_(
-            "Addition to the house number (e.g. A, B, courtyard apartment, app 12, etc.)."
-        ),
+        help_text=_("Addition to the house number (e.g. A, B, courtyard apartment, app 12, etc.)."),
     )
 
     price_per_night = models.DecimalField(
