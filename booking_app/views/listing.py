@@ -6,7 +6,7 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 
 from booking_app.choices import Role
 from booking_app.models import Listing
-from booking_app.serializers.listing import ListingSerializer
+from booking_app.serializers.listing import ListingListSerializer, ListingDetailSerializer
 from booking_app.permissions import IsOwnerOrReadOnly, IsOwnerUser
 
 
@@ -17,7 +17,10 @@ class ListingViewSet(viewsets.ModelViewSet):
     - owners can create and update their own listings
     """
 
-    serializer_class = ListingSerializer
+    def get_serializer_class(self):
+        if self.action == "list":
+            return ListingListSerializer
+        return ListingDetailSerializer
 
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
 

@@ -1,4 +1,3 @@
-# serializers/booking.py
 from rest_framework import serializers
 from booking_app.models import Booking, Listing
 
