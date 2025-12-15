@@ -13,7 +13,7 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         user = self.context["request"].user
-        listing = attrs["listing"]
+        listing = attrs.get("listing") # ! get лучше. т.к. получу None если листинг не придет
         today = date.today()
 
         # Есть ли хотя бы одно подтверждённое бронирование в прошлом
@@ -26,7 +26,7 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
 
         if not has_stayed:
             raise serializers.ValidationError(
-                "You can leave a review only after a confirmed booking has been completed."
+                {"comment" : "You can leave a review only after a confirmed booking has been completed." }
             )
 
         return attrs
