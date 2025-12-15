@@ -31,7 +31,7 @@ class Review(AbstractBaseModel):
     )
     comment = models.TextField(
         _("Comment"),
-        blank=True,
+        blank=True, null=True,
     )
 
     class Meta:

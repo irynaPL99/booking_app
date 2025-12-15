@@ -20,7 +20,7 @@ class Listing(AbstractBaseModel):
         verbose_name=_("Owner"),
     )
     title = models.CharField(_("Title"), max_length=200)
-    description = models.TextField(_("Description"), blank=True)
+    description = models.TextField(_("Description"), blank=True, null=True)
 
     region = models.CharField(
         _("Region"),

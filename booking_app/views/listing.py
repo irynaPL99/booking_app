@@ -18,7 +18,6 @@ class ListingViewSet(viewsets.ModelViewSet):
     """
 
     serializer_class = ListingSerializer
-    permission_classes = [permissions.AllowAny]
 
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
 

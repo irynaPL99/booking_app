@@ -81,7 +81,7 @@ class Booking(AbstractBaseModel):
         """
         Calculate total price for the stay based on listing price per night.
         """
-        if not self.listing or not hasattr(self.listing, "price_per_night"):
+        if not self.listing or self.listing.price_per_night is None:
             return Decimal("0.00")
         return Decimal(self.nights) * self.listing.price_per_night
 

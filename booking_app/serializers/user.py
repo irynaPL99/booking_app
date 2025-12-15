@@ -7,12 +7,13 @@ User = get_user_model()  # берём кастомную модель из AUTH_
 
 
 class RegisterSerializer(serializers.ModelSerializer):
+    """Serializer for user registration."""
     # Password comes only from request and is not returned in response
     password = serializers.CharField(write_only=True, min_length=8)
 
     class Meta:
         model = User
-        fields = ("email", "password", "first_name", "last_name", "role")
+        fields = ['id', 'email', 'password', 'first_name', 'last_name', 'role']
         extra_kwargs = {
             # If role is not sent, default value (CUSTOMER) from the model is used
             "role": {"required": False},
@@ -23,3 +24,12 @@ class RegisterSerializer(serializers.ModelSerializer):
         password = validated_data.pop("password")
         user = User.objects.create_user(password=password, **validated_data)
         return user
+
+
+class UserSerializer(serializers.ModelSerializer):
+    """Serializer for user profile update."""
+
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'first_name', 'last_name', 'role']
+        read_only_fields = ['id', 'email', 'role']

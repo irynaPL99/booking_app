@@ -39,11 +39,6 @@ class CustomUserManager(BaseUserManager):
         # сразу роль владельца
         extra_fields.setdefault("role", Role.OWNER)
 
-        if extra_fields.get("is_staff") is not True:
-            raise ValueError(_("Superuser must have is_staff=True."))  # Суперпользователь должен иметь is_staff=True
-        if extra_fields.get("is_superuser") is not True:
-            raise ValueError(_("Superuser must have is_superuser=True."))  # Суперпользователь должен иметь is_superuser=True
-
         return self.create_user(email, password, **extra_fields)
 
 
@@ -53,21 +48,15 @@ class User(AbstractUser):
     """
     # Кастомная модель пользователя с email в качестве уникального идентификатора
 
-    username = None
+    username = None  #Убирает поле из БД. На будущее, если хотим отображать на фронтэнде уникальный никнейм
+    # Django ожидает username(обязательное,уникальное) в AbstractUser
+    # first_name, last_name in в AbstractUser
+
     email = models.EmailField(
         _('Email address'),
         unique=True
     )
-    first_name = models.CharField(
-        _('First name'),
-        max_length=50,
-        blank=False
-    )
-    last_name = models.CharField(
-        _('Last name'),
-        max_length=50,
-        blank=True
-    )
+
 
     role = models.CharField(
         max_length=20,

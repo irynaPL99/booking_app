@@ -11,7 +11,7 @@ class ListingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Listing
-        fields = [
+        fields = [    # !! разделить на сериалайзер с детальной информацией, и с краткой для просмотра списка всех объявлений
             "id",
             "owner",
             "title",

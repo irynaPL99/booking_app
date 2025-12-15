@@ -9,10 +9,10 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
-import os   # LOGS_DIR
+# !! import os   # LOGS_DIR
 from pathlib import Path
 from environ import Env
-from datetime import timedelta
+# !! from datetime import timedelta
 
 
 
@@ -46,11 +46,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    'booking_app.apps.BookingAppConfig',
     'rest_framework',
     'rest_framework.authtoken',
     'django_filters',
     'drf_yasg',
+
+    'booking_app.apps.BookingAppConfig',
+
 ]
 
 MIDDLEWARE = [
