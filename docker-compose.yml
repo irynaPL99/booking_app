@@ -24,7 +24,26 @@ services:
       retries: 3
 
     ports:
-      - "33066:3306"
+      - "33066:3306"  # внешний 33066
+
+  web:
+    build:
+      dockerfile: Dockerfile
+    restart: always
+    container_name: my_pycharm
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      #- DB_HOST=db
+      - MYSQL_HOST=db
+      #- DJANGO_SETTINGS_MODULE=core.settings
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_PORT=3306 # !! всегда внутри контейнера
 
 
 volumes:
