@@ -1,11 +1,11 @@
-# booking_app/views/listing.py
 from django.db.models import Q
+from django.utils import timezone
 from rest_framework import viewsets, permissions, decorators, response, status
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 
-from booking_app.choices import Role
-from booking_app.models import Listing
+from booking_app.choices import Role, BookingStatus
+from booking_app.models import Listing, Booking
 from booking_app.serializers.listing import ListingListSerializer, ListingDetailSerializer
 from booking_app.permissions import IsOwnerOrReadOnly, IsOwnerUser
 
@@ -49,7 +49,7 @@ class ListingViewSet(viewsets.ModelViewSet):
 
         user = self.request.user
         if (
-                self.action in ['retrieve', 'update', 'partial_update', 'destroy']
+                self.action in ['retrieve', 'update', 'partial_update', 'destroy', 'toggle_active']
                 and user.is_authenticated
                 and getattr(user, "role", None) == Role.OWNER
         ):
@@ -90,21 +90,60 @@ class ListingViewSet(viewsets.ModelViewSet):
     def toggle_active(self, request, pk=None):
         """
         Switch listing availability on or off by toggling the is_active flag.
+
+        When deactivating a listing, automatically reject all pending future
+        bookings for this listing, but keep confirmed bookings unchanged.
         """
         # Получаем конкретное объявление по pk из URL
         listing = self.get_object()
 
+        # можно явно перепроверить
+        if listing.owner != request.user:
+            return response.Response(
+                {"detail": "Only listing owner can change availability."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         # Переключаем статус доступности (true → false или false → true)
         listing.is_active = not listing.is_active
-
         # Сохраняем только изменённое поле (эффективно)
         listing.save(update_fields=["is_active"])
 
-        # Возвращаем ID и новый статус
+        # автоотклоненные брони
+        auto_rejected = 0
+
+        # Если объявление выключили — обработать pending-брони
+        if not listing.is_active:
+            today = timezone.now().date()
+
+            pending_qs = Booking.objects.filter(
+                listing=listing,
+                status=BookingStatus.PENDING,
+                check_in__gt=today,  # только будущие заезды
+            )
+            auto_rejected = pending_qs.update(status=BookingStatus.REJECTED)
+            message = (
+                "Listing deactivated. All pending future bookings were rejected. "
+                "Confirmed future bookings must be cancelled manually by the owner "
+                "or honoured."
+            )
+        else:
+            message = "Listing activated."
+
         return response.Response(
-            {"id": listing.id, "is_active": listing.is_active},
+            {
+                "id": listing.id,
+                "is_active": listing.is_active,
+                "auto_rejected_bookings": auto_rejected,    # кол-во
+                "detail": message,
+            },
             status=status.HTTP_200_OK,
         )
+
+
+
+
+
 
     # Кабинет хозяина:
     # GET /api/v1/listings/my/ с заголовком
