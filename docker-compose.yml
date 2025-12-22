@@ -14,8 +14,8 @@ services:
 #      MYSQL_ROOT_HOST: '%'
 
     volumes:
-      - mysql_data:/var/lib/mysql
-
+      #- ./mysql_data:/var/lib/mysql   # ./ обязательно для AWS,чтобы папка создалась в текущей директории с проектом
+      - mysql_data:/var/lib/mysql # docker создаст директорию /var/lib/docker/volumes/с менем <имя проекта_mysql_data>
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       start_interval: 10s
@@ -38,7 +38,7 @@ services:
     environment:
       #- DB_HOST=db
       - MYSQL_HOST=db
-      #- DJANGO_SETTINGS_MODULE=core.settings
+      - DJANGO_SETTINGS_MODULE=core.settings  # для запуска на AWS
       - MYSQL_DATABASE=${MYSQL_DATABASE}
       - MYSQL_USER=${MYSQL_USER}
       - MYSQL_PASSWORD=${MYSQL_PASSWORD}
