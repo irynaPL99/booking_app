@@ -21,5 +21,6 @@ class ListingType(models.TextChoices):
 class BookingStatus(models.TextChoices):
     PENDING = "pending", _("Pending")        # запрос отправлен, ждёт решения владельца
     CONFIRMED = "confirmed", _("Confirmed")  # владелец подтвердил бронь
-    REJECTED = "rejected", _("Rejected")    # владелец отклонил
+    REJECTED = "rejected", _("Rejected")    # владелец отклонил до подтверждения
     CANCELLED = "cancelled", _("Cancelled")  # гость отменил бронь
+    CANCELLED_BY_OWNER = "cancelled_by_owner", _("Cancelled by owner") # владелец отменил бронь

@@ -1,6 +1,8 @@
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
+from django.utils import timezone
 from decimal import Decimal
 
+from django.db.models import Q
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -57,7 +59,7 @@ class Booking(AbstractBaseModel):
             return None
         return datetime.combine(self.check_in, self.CHECK_IN_TIME)
 
-    @property
+    @property   # -> views/booking.py, def perform_destroy, проверка при отмене на 24ч до заезда
     def check_out_datetime(self):
         """
         Return full check-out datetime with default time 12:00.
@@ -91,11 +93,49 @@ class Booking(AbstractBaseModel):
         """
         super().clean()     # ← Вызывает AbstractBaseModel.clean() (пустой),  "выполни валидацию родителей перед моей"
 
+        # Нельзя бронировать в прошлом
+        if self.check_in:
+            today = timezone.now().date()
+            # только завтрашний и дальше:
+            min_date = today + timedelta(days=1)
+            if self.check_in < min_date:
+                raise ValidationError({
+                    "check_in": _("Check-in date cannot be in the past. Booking is allowed starting from tomorrow.")
+                })
+
         if self.check_in and self.check_out and self.check_out <= self.check_in:
             raise ValidationError(_("Check-out date must be after check-in date."))
 
         if self.nights < 1:
             raise ValidationError(_("Minimum stay is 1 night."))
+
+        # Количество гостей не больше лимита в объявлении
+        if self.listing and self.guests_count:
+            max_guests = self.listing.max_guests
+            if max_guests is not None and self.guests_count > max_guests:
+                raise ValidationError({
+                    "guests_count": _(
+                        "Guests count cannot exceed maximum allowed for this listing."
+                    )
+                })
+
+        # Запрет пересечений дат для listing(id), учитывать только активные брони (PENDING,CONFIRMED)
+        if self.listing and self.check_in and self.check_out:
+            overlapping = Booking.objects.filter(
+                listing=self.listing,
+                status__in = [BookingStatus.PENDING, BookingStatus.CONFIRMED],
+            ).filter(
+                Q(check_in__lt=self.check_out) & Q(check_out__gt=self.check_in)
+            )
+            # self.pk есть только у объектов, которые уже существуют в базе (обновление),
+            # при создании (.create()) он ещё None.
+            if self.pk:
+                overlapping = overlapping.exclude(pk=self.pk)
+
+            if overlapping.exists():
+                raise ValidationError(_("These dates are already booked for this listing."))
+
+
 
     def save(self, *args, **kwargs):
         """
