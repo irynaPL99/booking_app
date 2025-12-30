@@ -1,4 +1,7 @@
 from django.contrib import admin
+from django.db import models
+from django.db.models import Count, Avg
+from django.db.models.functions import Coalesce
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
@@ -21,17 +24,22 @@ class UserAdmin(admin.ModelAdmin):
 class ListingAdmin(admin.ModelAdmin):
     """
     Admin configuration for property listings.
-    Displays owner, full address, city, type and active status.
+    Displays owner, full address, city, type, average_rating, review_count, active status.
     """
 
     list_display = (
+        "id",
         "full_address",
         "city",
         "listing_type",
         "owner",
+        "average_rating",
+        "review_count",
         "is_active",
     )
     list_filter = ("city", "is_active", "listing_type")
+    search_fields = ['title', 'description', 'city']
+    readonly_fields = ['average_rating', 'review_count']
 
     def full_address(self, obj):
         """
@@ -40,6 +48,37 @@ class ListingAdmin(admin.ModelAdmin):
         return obj.full_address     # @property for class Listing(AbstractBaseModel)
 
     full_address.short_description = "Full address"
+
+    # Без него: админка покажет только поля модели → нет average_rating
+    def get_queryset(self, request):
+        """
+        Add rating and review count to all listings.
+        Runs one SQL query with JOINs.
+        """
+
+        return super().get_queryset(request).annotate(
+            average_rating=Coalesce(Avg("reviews__rating"), 0.0, output_field=models.FloatField()),
+            review_count=Count("reviews")
+        )
+
+    def average_rating(self, obj):
+        """
+        Show rating with 1 decimal place. 0.0 if no reviews.
+        """
+        return f"{obj.average_rating:.1f}" if obj.average_rating else "0.0"
+
+    average_rating.short_description = "Rating"
+    average_rating.admin_order_field = "average_rating"
+
+    def review_count(self, obj):
+        """
+        Show total number of reviews for this listing.
+        """
+        return obj.review_count
+
+    review_count.short_description = "Reviews"
+    review_count.admin_order_field = "review_count"
+
 
 
 @admin.register(Booking)
@@ -50,6 +89,8 @@ class BookingAdmin(admin.ModelAdmin):
     """
 
     list_display = (
+        "id",
+        "listing_id_col",  # ID объявления
         "listing_full_address",
         "guest",
         "status",
@@ -59,13 +100,21 @@ class BookingAdmin(admin.ModelAdmin):
     )
     list_filter = ("status",)
 
+    def listing_id_col(self, obj):
+        """
+        Show listing ID number in admin table column.
+        """
+        return obj.listing_id  # это FK_id, Django создаёт автоматически
+
+    listing_id_col.short_description = "Listing ID"
+
     def listing_full_address(self, obj):
         """
         Show full address of the related listing.
         """
         if not obj.listing:
             return "-"
-        return obj.listing.full_address  # используем property вместо utils
+        return obj.listing.full_address  # property вместо utils
 
     listing_full_address.short_description = "Listing address"
 
@@ -85,13 +134,26 @@ class ReviewAdmin(admin.ModelAdmin):
     """
 
     list_display = (
+        "id",
+        "listing_id_col",  # ID объявления
         "listing_full_address",
         "listing_type",
         "author",
         "rating",
         "created_at",
+        "updated_at",
+        "comment_preview",
     )
-    list_filter = ("rating",)
+    list_filter = ["rating", "created_at", "updated_at"]
+    search_fields = ["comment"]
+
+    def listing_id_col(self, obj):
+        """
+        Show listing ID number in admin table column.
+        """
+        return obj.listing_id  # это FK_id, Django создаёт автоматически
+
+    listing_id_col.short_description = "Listing ID"
 
     def listing_full_address(self, obj):
         """
@@ -112,3 +174,11 @@ class ReviewAdmin(admin.ModelAdmin):
         return obj.listing.get_listing_type_display()
 
     listing_type.short_description = "Type"
+
+    def comment_preview(self, obj):
+        """
+        Show readable listing type.
+        """
+        return obj.comment[:20] + "..." if obj.comment else "-"
+
+    comment_preview.short_description = "Comment"

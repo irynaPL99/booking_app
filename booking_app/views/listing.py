@@ -1,4 +1,6 @@
-from django.db.models import Q
+from django.db import models
+from django.db.models import Q, Avg, Count
+from django.db.models.functions import Coalesce # функция SQL (берёт первый не-NULL аргумент)
 from django.utils import timezone
 from rest_framework import viewsets, permissions, decorators, response, status
 from django_filters.rest_framework import DjangoFilterBackend
@@ -35,8 +37,13 @@ class ListingViewSet(viewsets.ModelViewSet):
         "is_active": ["exact"],  # Active status
     }
 
-    ordering_fields = ["price_per_night", "-price_per_night", "created_at", "-created_at"]
-    ordering = ["-created_at"]  # Newest first
+    ordering_fields = [
+        "price_per_night", "-price_per_night",
+        "created_at", "-created_at",
+        "average_rating", "-average_rating",
+        "review_count", "-review_count",
+    ]
+    ordering = ["-average_rating", "review_count"]  # по умолчанию
 
     def get_queryset(self):
         """
@@ -55,9 +62,16 @@ class ListingViewSet(viewsets.ModelViewSet):
         ):
             return Listing.objects.filter(
                 Q(is_active=True) | Q(owner=user)
+            ).annotate(
+                # Результат всегда FloatField. Если null — замени на 0.0
+                average_rating=Coalesce(Avg("reviews__rating"), 0.0, output_field=models.FloatField()),
+                review_count=Count("reviews"),
             ).order_by("-created_at")
 
-        return base_qs.order_by("-created_at")
+        return base_qs.annotate(
+            average_rating=Coalesce(Avg("reviews__rating"),0.0, output_field=models.FloatField()),
+            review_count=Count("reviews"),
+        ).order_by("-created_at")
 
     def get_permissions(self):
         """
@@ -140,16 +154,11 @@ class ListingViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK,
         )
 
-
-
-
-
-
     # Кабинет хозяина:
-    # GET /api/v1/listings/my/ с заголовком
+    # GET /api/v1/listings/my/ с токеном
     # Authorization: Token <token_хозяина>  → все его объявления, и активные, и выключенные
     @decorators.action(
-        detail=False,  # /listings/my/
+        detail=False,
         methods=["get"],
         permission_classes=[permissions.IsAuthenticated, IsOwnerUser],
         url_path="my",
@@ -158,6 +167,11 @@ class ListingViewSet(viewsets.ModelViewSet):
         """
         Return all listings owned by the current user (active and inactive).
         """
-        qs = Listing.objects.filter(owner=request.user).order_by("-created_at")
+        qs = Listing.objects.filter(owner=request.user).annotate(
+            # Coalesce (null -> 0)
+            average_rating=Coalesce(Avg("reviews__rating"), 0.0, output_field=models.FloatField()),
+            review_count=Count("reviews"),
+        ).order_by("-created_at")
+
         serializer = self.get_serializer(qs, many=True)
         return response.Response(serializer.data, status=status.HTTP_200_OK)
