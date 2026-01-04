@@ -1,12 +1,8 @@
-# booking_app/permissions.py
-
-from datetime import date
-
 from rest_framework import permissions
 from rest_framework.permissions import BasePermission
 
 from booking_app.choices import Role
-from booking_app.models import Booking, BookingStatus
+
 
 class IsOwnerUser(permissions.BasePermission):
     """

@@ -1,4 +1,3 @@
-# serializers/auth_token.py
 from django.contrib.auth import authenticate
 from rest_framework import serializers
 
