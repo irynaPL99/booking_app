@@ -3,13 +3,15 @@ from django.db.models import Q, Avg, Count
 from django.db.models.functions import Coalesce # функция SQL (берёт первый не-NULL аргумент)
 from django.utils import timezone
 from rest_framework import viewsets, permissions, decorators, response, status
+from rest_framework.decorators import action, permission_classes
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 
 from booking_app.choices import Role, BookingStatus
-from booking_app.models import Listing, Booking
+from booking_app.models import Listing, Booking, Review
 from booking_app.serializers.listing import ListingListSerializer, ListingDetailSerializer
 from booking_app.permissions import IsOwnerOrReadOnly, IsOwnerUser
+from booking_app.serializers.review import ReviewListSerializer
 
 
 class ListingViewSet(viewsets.ModelViewSet):
@@ -175,3 +177,24 @@ class ListingViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(qs, many=True)
         return response.Response(serializer.data, status=status.HTTP_200_OK)
+
+
+    @decorators.action(
+        detail=True,  # true = /listings/{pk}/reviews/
+        methods=["get"],
+        url_path="reviews",
+    )
+    @permission_classes([permissions.IsAuthenticated])
+    def reviews(self, request, pk=None):
+        """
+        Only for authenticated users.
+        Return all reviews for this listing(id).
+        Only for active listings (or owner's own inactive listings).
+        """
+        listing = self.get_object()  # Получаем listing (применяется логика get_queryset) с проверкой прав/активности
+        # авторизованные увидят активные + свои неактивные
+        qs = Review.objects.filter(listing=listing) \
+            .select_related('author') \
+            .order_by("-created_at")
+        serializer = ReviewListSerializer(qs, many=True)
+        return response.Response(serializer.data)
