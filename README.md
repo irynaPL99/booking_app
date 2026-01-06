@@ -42,41 +42,64 @@ Built with Django, Django REST Framework, and MySQL.
 - django-filters (for listing filters)
 - Token authentication
 
+
 ## Project Structure
+
+```text
 booking_app/
-├── bookingapp/
-│ ├── init.py
-│ ├── settings.py # Django settings, DRF config
-│ ├── urls.py # Main API router
-│ └── wsgi.py
-├── bookingapp/urls/ # App routers
-│ ├── init.py
-│ ├── auth.py # /auth/register, /auth/token
-│ ├── booking.py
-│ ├── listing.py
-│ ├── review.py
-│ └── user.py
-├── bookingapp/views/ # API views
-│ ├── auth.py # RegisterView, TokenLoginView
-│ ├── booking.py
-│ ├── listing.py
-│ └── user.py # UserViewSet with /me/
-├── bookingapp/serializers/ # Data serializers
-│ ├── init.py
-│ ├── authtoken.py
-│ ├── booking.py
-│ ├── changepassword.py
-│ ├── listing.py
-│ ├── review.py
-│ └── user.py
-├── booking_app/models/    # Database models
-│ ├── init.py
-│ ├── booking.py
-│ ├── listing.py
-│ └── review.py
+├── booking_app/
+│   ├── admin.py
+│   ├── apps.py
+│   ├── choices.py
+│   ├── permissions.py
+│   ├── routers.py
+│   │
+│   ├── migrations/
+│   │
+│   ├── models/
+│   │   ├── base.py
+│   │   ├── booking.py
+│   │   ├── listing.py
+│   │   ├── review.py
+│   │   └── user.py
+│   │
+│   ├── serializers/
+│   │   ├── auth.py
+│   │   ├── auth_token.py
+│   │   ├── booking.py
+│   │   ├── change_password.py
+│   │   ├── listing.py
+│   │   ├── review.py
+│   │   └── user.py
+│   │
+│   ├── urls/
+│   │   ├── auth.py
+│   │   ├── booking.py
+│   │   ├── listing.py
+│   │   ├── review.py
+│   │   └── user.py
+│   │
+│   └── views/
+│       ├── auth.py
+│       ├── booking.py
+│       ├── listing.py
+│       ├── review.py
+│       └── user.py
+│
+├── core/
+│   ├── asgi.py
+│   ├── settings.py
+│   ├── urls.py
+│   └── wsgi.py
+│
+├── .env                 # NOT in Git
+├── .env_example
+├── docker-compose.yml
+├── Dockerfile
 ├── manage.py
 ├── requirements.txt
 └── README.md
+
 
 
 
@@ -87,30 +110,36 @@ booking_app/
    git clone https://github.com/irynaPL99/booking_app.git
    cd booking_app
 
-2. Create and activate virtual environment
-python -m venv venv
-source venv/bin/activate        # Linux/Mac
-# or
-venv\Scripts\activate          # Windows
+2. Create and activate virtual environment:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # Linux/Mac
+   # venv\Scripts\activate    # Windows
 
-3. Install dependencies
-pip install -r requirements.txt
 
-4. Configure MySQL database
-Create a database in MySQL and update DATABASES in booking_app/settings.py with your credentials.
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
 
-5. Run migrations
-python manage.py makemigrations
-python manage.py migrate
 
-6. Create superuser (optional, for admin panel)
-python manage.py createsuperuser
+4. Configure MySQL database:
+   Create a database in MySQL and update `DATABASES` in `booking_app/settings.py` with your credentials.
 
-7. Run the development server
-python manage.py runserver
 
-8. 
+5. Run migrations:
+   ```bash
+   python manage.py makemigrations
+   python manage.py migrate
 
+
+6. Create superuser (optional, for admin panel):
+   ```bash
+   python manage.py createsuperuser
+
+
+7. Run the development server:
+   ```bash
+   python manage.py runserver
 
 
 
